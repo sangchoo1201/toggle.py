@@ -15,6 +15,7 @@ pygame.display.set_caption("Toggle.py")
 level_code = [0, 0, 0]
 x_max, y_max = 0, 0
 
+
 def flip(x, y):
     level_code[2][y][x] ^= 1
 
@@ -151,6 +152,7 @@ def shift_r(x, y):
     row.insert(0, row.pop())
     level_code[2][y] = row
 
+
 def click(x, y, shape=None):
     global do
 
@@ -203,13 +205,14 @@ def redo():
     return True
 
 
-def print_state():
+def print_state():  # for debugging
     for row in level_code[2]:
         print(*row)
 
-def print_shape():
+def print_shape():  # for debugging
     for row in level_code[1]:
         print(*row)
+
 
 def generate(width, height, amount):
     global x_max, y_max, do, did, click_count
@@ -251,7 +254,7 @@ def generate(width, height, amount):
     do, did = [], []
     click_count = 0
 
-def v1_encode():
+def v1_encode():  # unused function
     encoded_text = f"{level_code[0][0]}:{level_code[0][1]}:"
     for i, j in zip(sum(level_code[1], []), sum(level_code[2], [])):
         char = 64 + (j^1)*32 + i
@@ -292,6 +295,7 @@ def draw_text(text, size, pos, option=None):
     elif option == "center":
         rect.center = pos
     screen.blit(img, rect)
+
 
 def set_mode(select):
     global mode, click_count, amount, level, do, did, run
