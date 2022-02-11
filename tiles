@@ -1,0 +1,20 @@
+up
+down
+left
+right
+left_up
+right_up
+right_down
+left_down
+left + right
+up + down
+left_up + right_down
+right_up + left_down
+clockwise
+counter-clockwise
+diamond
+square
+vertical_mirror
+horizontal_mirror
+left_shift
+right_shift
