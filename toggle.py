@@ -180,10 +180,10 @@ def pos():
 
 
 def undo():
-    global do, did
+    global do, did, click_count
 
     if not do:
-        return False
+        return
 
     move = do.pop()
     did.append(move)
@@ -191,18 +191,26 @@ def undo():
     if move[2] in (13, 14, 19, 20):
         move[2] ^= 1
     click(*move)
-    return True
+    click_count -= 1
 
 def redo():
-    global did
+    global did, click_count
 
     if not did:
-        return False
+        return
 
     move = did.pop()
     do.append(move)
     click(*move)
-    return True
+    click_count += 1
+
+def reset():
+    global do, did, click_count
+
+    while do:
+        undo()
+    did = []
+    click_count = 0
 
 
 def print_state():  # for debugging
@@ -352,25 +360,30 @@ while run:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = pos()
+                mx, my = pygame.mouse.get_pos()
                 if 0 <= x < x_max and 0 <= y < y_max:
                     click(x, y)
                     did = []
                     click_count += 1
+                    continue
+                elif not round((screen_height + minimum*0.78)/2) <= my <= round((screen_height + minimum*0.92)/2):
+                    continue
+                for i, func in enumerate((undo, redo, reset)):
+                    center_x = round((screen_width/2)-(minimum/3.5)*(1-i))
+                    if center_x - minimum*0.07 <= mx <= center_x + minimum*0.07:
+                        func()
+                        break
+
             if event.type != pygame.KEYDOWN:
                 continue
             if event.key == pygame.K_ESCAPE:
                 set_mode("menu")
             if event.key == pygame.K_z:
-                if undo():
-                    click_count -= 1
+                undo()
             if event.key == pygame.K_x:
-                if redo():
-                    click_count += 1
+                redo()
             if event.key == pygame.K_r:
-                while do:
-                    undo()
-                did = []
-                click_count = 0
+                reset()
 
         draw()
         if not any(sum(level_code[2], [])):
@@ -379,9 +392,14 @@ while run:
             generate(5, 5, amount)
             level += 1
 
-        score = f"level: {level}, click:{click_count}"
-        position = ((screen_width-minimum)//2, (screen_height-minimum)//2)
+        score = f"level:{level}  click:{click_count}"
+        position = ((screen_width-minimum)//2+2, (screen_height-minimum)//2+2)
         draw_text(score, minimum // 20, position)
+
+        texts = ("undo", "redo", "reset")
+        for i, text in enumerate(texts):
+            position = (round((screen_width/2)-(minimum/3.5)*(1-i)), round((screen_height + minimum*0.85)/2))
+            draw_text(text, minimum // 20, position, "center")
 
     pygame.display.flip()
 
