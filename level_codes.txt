@@ -1,0 +1,6 @@
+Sangchoo1201:arrow:5:5:`@`B`D`@`@`@`@`@`@`C`A`@`
+Sangchoo1201:diamond:4:4:O````O````O````O
+Sangchoo1201:square:4:4:@``@`pp``pp`@``@
+Sangchoo1201:rotation:3:5:@`@@@@jmj@@@@`@
+Sangchoo1201:mirror:5:5:@````@````@Q`Q`@````@```a
+Sangchoo1201:shift:5:4:```@st@``````@s``A``

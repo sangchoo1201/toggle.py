@@ -1,5 +1,6 @@
 import random
 import pygame
+import win32clipboard as clip
 
 clock = pygame.time.Clock()
 fps = 60
@@ -153,7 +154,7 @@ def shift_r(x, y):
     level_code[2][y] = row
 
 
-def click(x, y, shape=None):
+def click(x, y, reverse=False):
     global do
 
     functions = (flip, flip_u, flip_d, flip_l, flip_r,
@@ -163,11 +164,17 @@ def click(x, y, shape=None):
                  mirror_lr, mirror_ud, shift_l, shift_r)
 
     num = level_code[1][y][x]
-    if shape:
-        functions[shape](x, y)
-    elif num != 0:
-        functions[num](x, y)
-        do.append((x, y, num))
+    if num == 0:
+        return
+
+    if reverse:
+        if num in (13, 19):
+            num += 1
+        elif num in (14, 20):
+            num -= 1
+    functions[num](x, y)
+    if not reverse:
+        do.append((x, y))
 
 def pos():
     x, y = pygame.mouse.get_pos()
@@ -188,9 +195,7 @@ def undo():
     move = do.pop()
     did.append(move)
     move = list(move)
-    if move[2] in (13, 14, 19, 20):
-        move[2] ^= 1
-    click(*move)
+    click(*move, True)
     click_count -= 1
 
 def redo():
@@ -200,7 +205,6 @@ def redo():
         return
 
     move = did.pop()
-    do.append(move)
     click(*move)
     click_count += 1
 
@@ -222,32 +226,37 @@ def print_shape():  # for debugging
         print(*row)
 
 
-def generate(width, height, amount):
+def generate(width, height, amount, shape_list):
     global x_max, y_max, do, did, click_count
 
     level_code[0] = (width, height)
     x_max, y_max = width, height
+    shape_list = shape_list[:]
 
-    shape = [[0 for _ in range(width)][:] for _ in range(height)]
-    shape[random.randrange(height)][random.randrange(width)] = 15
-    for x in range(width):
-        for y in range(height):
-            li = set(range(13))
-            if x == 0:
-                li -= set((3, 5, 8))
-            if x == width-1:
-                li -= set((4, 6, 7))
-            if y == 0:
-                li -= set((1, 5, 6))
-            if y == height-1:
-                li -= set((2, 7, 8))
-            if (x, y) in ((0, height-1), (width-1, 0)):
-                li.discard(11)
-            if (x, y) in ((0, 0), (width-1, height-1)):
-                li.discard(12)
-            if shape[y][x] != 15:
-                shape[y][x] = random.choice(list(li))
-    level_code[1] = shape
+    level_code[1] = [[0 for _ in range(width)][:] for _ in range(height)]
+    for i in range(y_max):
+        for j in range(x_max):
+            random.shuffle(shape_list)
+            discard_list = []
+            shape = None
+            while True:
+                if shape is not None:
+                    discard_list.append(shape)
+                shape = shape_list.pop() if shape_list else random.randint(0, 16)
+                if j == 0 and shape in (3, 5, 8):
+                    continue
+                if j == width - 1 and shape in (4, 6, 7):
+                    continue
+                if i == 0 and shape in (1, 5, 6):
+                    continue
+                if i == height - 1 and shape in (2, 7, 8):
+                    continue
+                if (j, i) in ((0, height-1), (width-1, 0)) and shape == 11:
+                    continue
+                if (j, i) in ((0, 0), (width-1, height-1)) and shape == 12:
+                    continue
+                break
+            level_code[1][i][j] = shape
 
     level_code[2] = [[0 for _ in range(width)][:] for _ in range(height)]
     li = list(range(width * height))
@@ -258,16 +267,35 @@ def generate(width, height, amount):
         while level_code[1][y][x] == 0:
             i = li.pop()
             x, y = i%width, i//width
-        click(x, y)
+        click(x, y, True)
     do, did = [], []
     click_count = 0
 
-def v1_encode():  # unused function
-    encoded_text = f"{level_code[0][0]}:{level_code[0][1]}:"
+def v1_encode(author, name):  # unused function
+    encoded_text = "".join(
+        str(i) + spliter
+        for i in (author, name, level_code[0][0], level_code[0][1])
+    )
+
     for i, j in zip(sum(level_code[1], []), sum(level_code[2], [])):
         char = 64 + (j^1)*32 + i
         encoded_text += chr(char)
     return encoded_text
+
+def v1_decode():
+    global level_code, x_max, y_max, code
+
+    x_max, y_max = codes[2], codes[3]
+    level_code[0] = (x_max, y_max)
+
+    level_code[1] = [[0 for _ in range(x_max)][:] for _ in range(y_max)]
+    level_code[2] = [[0 for _ in range(x_max)][:] for _ in range(y_max)]
+    for i in range(y_max):
+        for j in range(x_max):
+            a = ord(code[0])
+            code = code[1:]
+            level_code[1][i][j] = (a & 31)
+            level_code[2][i][j] = 0 if (a & 32) else 1
 
 
 def draw():
@@ -294,19 +322,17 @@ def draw():
             img = pygame.transform.scale(img, (tile_size//3*2, tile_size//3*2))
             screen.blit(img, (dx+tile_size//6, dy+tile_size//6))
 
-def draw_text(text, size, pos, option=None):
+def draw_text(text, size, pos):
     font = pygame.font.SysFont("consolas", size)
     img = font.render(text, True, (255, 255, 255))
     rect = img.get_rect()
-    if option is None:
-        rect.x, rect.y = pos
-    elif option == "center":
-        rect.center = pos
+    rect.center = pos
     screen.blit(img, rect)
+    return rect
 
 
 def set_mode(select):
-    global mode, click_count, amount, level, do, did, run
+    global mode, click_count, amount, level, do, did, run, code, codes
 
     mode = select
     if mode == "classic":
@@ -314,14 +340,39 @@ def set_mode(select):
         amount = 3
         level = 1
         do, did = [], []
-        generate(5, 5, amount)
+        generate(5, 5, amount, classic_shape)
+    elif mode == "play":
+        click_count = 0
+        level = codes[1]
+        do, did = [], []
+        v1_decode()
+    elif mode == "custom play":
+        try:
+            clip.OpenClipboard()
+            codes = clip.GetClipboardData().split(spliter)
+            assert len(codes) == 5
+            codes[2] = int(codes[2])
+            codes[3] = int(codes[3])
+            assert len(codes[4]) == codes[2] * codes[3]
+            code = codes[4]
+            for i in range(64, 85):
+                codes[4] = codes[4].replace(chr(i), "")
+                codes[4] = codes[4].replace(chr(i+32), "")
+            assert not codes[4]
+            codes.pop()
+        except:
+            code = None
+        finally:
+            clip.CloseClipboard()
     elif mode == "exit":
         run = False
 
 
-mode, click_count, amount, level, do, did = [None]*6
-selection_max = 2
-modes = ["classic", "exit"]
+mode, click_count, amount, level, do, did, code, codes = [None]*8
+selection_max = 3
+modes = ["classic", "custom play", "exit"]
+spliter = ":"
+classic_shape = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 set_mode("menu")
 
 run = True
@@ -349,12 +400,37 @@ while run:
                 run = False
 
         logo = "TOGGLE.py"
-        draw_text(logo, minimum//10, (screen_width//2, screen_height//2 - minimum//3), "center")
+        draw_text(logo, minimum//10, (screen_width//2, screen_height//2 - minimum//3))
         for i, text in enumerate(modes):
             position = (screen_width//2, screen_height//2 + minimum//8*i)
-            draw_text(text, minimum//15, position, "center")
+            draw_text(text, minimum//15, position)
 
-    elif mode == "classic":
+    elif mode == "custom play":
+        return_rect = draw_text("return to menu", minimum//20, (screen_width//2, screen_height//2 + minimum//5))
+        if code:
+            draw_text(f"{codes[1]}", minimum//15, (screen_width//2, screen_height//2 - minimum//4))
+            draw_text(f"by {codes[0]}", minimum//20, (screen_width//2, screen_height//2 - round(minimum*0.17)))
+            draw_text(f"size: {codes[2]}*{codes[3]}", minimum//20, (screen_width//2, screen_height//2))
+            play_rect = draw_text("play!", minimum//20, (screen_width//2, screen_height//2 + round(minimum*0.3)))
+        else:
+            draw_text("No valid level", minimum//15, (screen_width//2, screen_height//2 - minimum//10))
+            draw_text("in your clipboard!", minimum//15, (screen_width//2, screen_height//2))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if return_rect.collidepoint(x, y):
+                    set_mode("menu")
+                if code and play_rect.collidepoint(x, y):
+                    set_mode("play")
+            if event.type != pygame.KEYDOWN:
+                continue
+            if event.key == pygame.K_ESCAPE:
+                set_mode("menu")
+
+    elif mode in ("classic", "play"):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -363,8 +439,9 @@ while run:
                 mx, my = pygame.mouse.get_pos()
                 if 0 <= x < x_max and 0 <= y < y_max:
                     click(x, y)
-                    did = []
-                    click_count += 1
+                    if level_code[1][y][x] != 0:
+                        did = []
+                        click_count += 1
                     continue
                 elif not round((screen_height + minimum*0.78)/2) <= my <= round((screen_height + minimum*0.92)/2):
                     continue
@@ -387,19 +464,22 @@ while run:
 
         draw()
         if not any(sum(level_code[2], [])):
-            if level % 10 == 0:
-                amount += 1
-            generate(5, 5, amount)
-            level += 1
+            if mode == "classic":
+                if level % 10 == 0:
+                    amount += 1
+                generate(5, 5, amount, classic_shape)
+                level += 1
+            elif mode == "play":
+                set_mode("menu")
 
         score = f"level:{level}  click:{click_count}"
-        position = ((screen_width-minimum)//2+2, (screen_height-minimum)//2+2)
+        position = (round(screen_width/2), round((screen_height-minimum*0.85)/2))
         draw_text(score, minimum // 20, position)
 
         texts = ("undo", "redo", "reset")
         for i, text in enumerate(texts):
             position = (round((screen_width/2)-(minimum/3.5)*(1-i)), round((screen_height + minimum*0.85)/2))
-            draw_text(text, minimum // 20, position, "center")
+            draw_text(text, minimum // 20, position)
 
     pygame.display.flip()
 

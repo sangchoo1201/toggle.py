@@ -1,20 +1,20 @@
-up
-down
-left
-right
-left_up
-right_up
-right_down
-left_down
-left + right
-up + down
-left_up + right_down
-right_up + left_down
-clockwise
-counter-clockwise
-diamond
-square
-vertical_mirror
-horizontal_mirror
-left_shift
-right_shift
+A up
+B down
+C left
+D right
+E left_up
+F right_up
+G right_down
+H left_down
+I left + right
+J up + down
+K left_up + right_down
+L right_up + left_down
+M clockwise
+N counter-clockwise
+O diamond
+P square
+Q vertical_mirror
+R horizontal_mirror
+S left_shift
+T right_shift
