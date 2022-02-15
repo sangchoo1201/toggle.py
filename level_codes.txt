@@ -1,6 +1,6 @@
-Sangchoo1201:arrow:5:5:`@`B`D`@`@`@`@`@`@`C`A`@`
-Sangchoo1201:diamond:4:4:O````O````O````O
-Sangchoo1201:square:4:4:@``@`pp``pp`@``@
-Sangchoo1201:rotation:3:5:@`@@@@jmj@@@@`@
-Sangchoo1201:mirror:5:5:@````@````@Q`Q`@````@```a
-Sangchoo1201:shift:5:4:```@st@``````@s``A``
+U2FuZ2Nob28xMjAxOmFycm93OjU6NTpgQGBCYERgQGBAYEBgQGBAYEBgQ2BBYEBg
+U2FuZ2Nob28xMjAxOmRpYW1vbmQ6NDo0Ok9gYGBgT2BgYGBPYGBgYE8=
+U2FuZ2Nob28xMjAxOnNxdWFyZTo0OjQ6QGBgQGBwcGBgcHBgQGBgQA==
+U2FuZ2Nob28xMjAxOnJvdGF0aW9uOjM6NTpAYEBAQEBqbWpAQEBAYEA=
+U2FuZ2Nob28xMjAxOm1pcnJvcjo1OjU6QGBgYGBAYGBgYEBRYFFgQGBgYGBAYGBgYQ==
+U2FuZ2Nob28xMjAxOnNoaWZ0OjU6NDpgYGBAc3RAYGBgYGBgQHNgYEFgYA==
