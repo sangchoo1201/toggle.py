@@ -1,6 +1,7 @@
 import random
 import pygame
 import win32clipboard as clip
+from typing import List
 
 clock = pygame.time.Clock()
 fps = 60
@@ -13,7 +14,7 @@ pygame.init()
 
 pygame.display.set_caption("Toggle.py")
 
-level_code = [0, 0, 0]
+level_code: List = [[], [], []]
 x_max, y_max = 0, 0
 
 
@@ -77,31 +78,31 @@ def flip_ru_ld(x, y):
     flip(x, y)
 
 def rotate_cw(x, y):
-    pos = ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))
+    positions = ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))
     li = []
-    for dx, dy in pos:
+    for dx, dy in positions:
         if not (0 <= x+dx < x_max and 0 <= y+dy < y_max):
             li.append(0)
         else:
             li.append(level_code[2][y+dy][x+dx])
     li.insert(0, li.pop())
-    for i, d in enumerate(pos):
+    for i, d in enumerate(positions):
         dx, dy = d
         if 0 <= x+dx < x_max and 0 <= y+dy < y_max:
             level_code[2][y+dy][x+dx] = li[i]
     flip(x, y)
 
 def rotate_ccw(x, y):
-    pos = ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))
+    positions = ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))
     li = []
-    for dx, dy in pos:
+    for dx, dy in positions:
         if not (0 <= x+dx < x_max and 0 <= y+dy < y_max):
             li.append(0)
         else:
             li.append(level_code[2][y+dy][x+dx])
     li.append(li[0])
     del li[0]
-    for i, d in enumerate(pos):
+    for i, d in enumerate(positions):
         dx, dy = d
         if 0 <= x+dx < x_max and 0 <= y+dy < y_max:
             level_code[2][y+dy][x+dx] = li[i]
@@ -115,8 +116,8 @@ def flip_diamond(x, y):
     flip(x, y)
 
 def flip_square(x, y):
-    pos = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
-    for dx, dy in pos:
+    positions = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
+    for dx, dy in positions:
         if 0 <= x + dx < x_max and 0 <= y + dy < y_max:
             flip(x+dx, y+dy)
 
@@ -226,10 +227,10 @@ def print_shape():  # for debugging
         print(*row)
 
 
-def generate(width, height, amount, shape_list):
+def generate(width, height, click_amount, shape_list):  # sourcery no-metrics
     global x_max, y_max, do, did, click_count
 
-    level_code[0] = (width, height)
+    level_code[0] = tuple((width, height))
     x_max, y_max = width, height
     shape_list = shape_list[:]
 
@@ -261,7 +262,7 @@ def generate(width, height, amount, shape_list):
     level_code[2] = [[0 for _ in range(width)][:] for _ in range(height)]
     li = list(range(width * height))
     random.shuffle(li)
-    for _ in range(amount):
+    for _ in range(click_amount):
         i = li.pop()
         x, y = i%width, i//width
         while level_code[1][y][x] == 0:
@@ -322,11 +323,11 @@ def draw():
             img = pygame.transform.scale(img, (tile_size//3*2, tile_size//3*2))
             screen.blit(img, (dx+tile_size//6, dy+tile_size//6))
 
-def draw_text(text, size, pos):
+def draw_text(value, size, positions):
     font = pygame.font.SysFont("consolas", size)
-    img = font.render(text, True, (255, 255, 255))
+    img = font.render(value, True, (255, 255, 255))
     rect = img.get_rect()
-    rect.center = pos
+    rect.center = positions
     screen.blit(img, rect)
     return rect
 
@@ -387,13 +388,13 @@ while run:
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                if not screen_width//2 - minimum//6 <= x <= screen_width//2 + minimum//6:
+                px, py = pygame.mouse.get_pos()
+                if not screen_width//2 - minimum//6 <= px <= screen_width//2 + minimum//6:
                     continue
-                y -= screen_height//2
-                y = round(y/(minimum//8))
-                if 0 <= y < selection_max:
-                    set_mode(modes[y])
+                py -= screen_height//2
+                py = round(py/(minimum//8))
+                if 0 <= py < selection_max:
+                    set_mode(modes[py])
             if event.type != pygame.KEYDOWN:
                 continue
             if event.key == pygame.K_ESCAPE:
@@ -401,8 +402,8 @@ while run:
 
         logo = "TOGGLE.py"
         draw_text(logo, minimum//10, (screen_width//2, screen_height//2 - minimum//3))
-        for i, text in enumerate(modes):
-            position = (screen_width//2, screen_height//2 + minimum//8*i)
+        for index, text in enumerate(modes):
+            position = (screen_width//2, screen_height//2 + minimum//8*index)
             draw_text(text, minimum//15, position)
 
     elif mode == "custom play":
@@ -420,10 +421,10 @@ while run:
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                if return_rect.collidepoint(x, y):
+                px, py = pygame.mouse.get_pos()
+                if return_rect.collidepoint(px, py):
                     set_mode("menu")
-                if code and play_rect.collidepoint(x, y):
+                if code and play_rect.collidepoint(px, py):
                     set_mode("play")
             if event.type != pygame.KEYDOWN:
                 continue
@@ -435,18 +436,18 @@ while run:
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pos()
+                px, py = pos()
                 mx, my = pygame.mouse.get_pos()
-                if 0 <= x < x_max and 0 <= y < y_max:
-                    click(x, y)
-                    if level_code[1][y][x] != 0:
+                if 0 <= px < x_max and 0 <= py < y_max:
+                    click(px, py)
+                    if level_code[1][py][px] != 0:
                         did = []
                         click_count += 1
                     continue
                 elif not round((screen_height + minimum*0.78)/2) <= my <= round((screen_height + minimum*0.92)/2):
                     continue
-                for i, func in enumerate((undo, redo, reset)):
-                    center_x = round((screen_width/2)-(minimum/3.5)*(1-i))
+                for index, func in enumerate((undo, redo, reset)):
+                    center_x = round((screen_width/2)-(minimum/3.5)*(1-index))
                     if center_x - minimum*0.07 <= mx <= center_x + minimum*0.07:
                         func()
                         break
@@ -477,8 +478,8 @@ while run:
         draw_text(score, minimum // 20, position)
 
         texts = ("undo", "redo", "reset")
-        for i, text in enumerate(texts):
-            position = (round((screen_width/2)-(minimum/3.5)*(1-i)), round((screen_height + minimum*0.85)/2))
+        for index, text in enumerate(texts):
+            position = (round((screen_width/2)-(minimum/3.5)*(1-index)), round((screen_height + minimum*0.85)/2))
             draw_text(text, minimum // 20, position)
 
     pygame.display.flip()
