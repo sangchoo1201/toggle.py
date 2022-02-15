@@ -2,6 +2,7 @@ import random
 import pygame
 import win32clipboard as clip
 from typing import List
+import base64
 
 clock = pygame.time.Clock()
 fps = 60
@@ -281,7 +282,7 @@ def v1_encode(author, name):  # unused function
     for i, j in zip(sum(level_code[1], []), sum(level_code[2], [])):
         char = 64 + (j^1)*32 + i
         encoded_text += chr(char)
-    return encoded_text
+    return base64.b64encode(bytes(encoded_text))
 
 def v1_decode():
     global level_code, x_max, y_max, code
@@ -350,7 +351,7 @@ def set_mode(select):
     elif mode == "custom play":
         try:
             clip.OpenClipboard()
-            codes = clip.GetClipboardData().split(spliter)
+            codes = list(base64.b64decode(clip.GetClipboardData()).decode().split(spliter))
             assert len(codes) == 5
             codes[2] = int(codes[2])
             codes[3] = int(codes[3])
